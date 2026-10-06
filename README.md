@@ -8,10 +8,11 @@ Open C:\Users\sanika\Ticketing Tool, then run:
 
 ```powershell
 npm install
+Copy-Item .env.example .env.local
 npm run ui
 ```
 
-Open http://localhost:5173. Restart Vite after changing environment files.
+For a fresh clone, fill VITE_SUPABASE_PUBLISHABLE_KEY in .env.local with the project's public publishable key before running the UI. Keep .env.local private. If you already have .env.local, keep your existing file instead of copying over it. Open http://localhost:5173. Restart Vite after changing environment files.
 
 ## Authentication and protected routes
 
