@@ -1,0 +1,4 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {ticketEmail} from '../supabase/functions/ticketing-admin/ticket-email.mjs';
+test('ticket emails identify creator and recipient and escape HTML',()=>{const ticket={number:12,requirements:'<script>alert(1)</script>',priority:'High',status:'Open'};const creator={id:'a',name:'Creator'},assignee={id:'b',name:'Assignee'};const created=ticketEmail(ticket,creator,assignee,creator,'https://example.com');const assigned=ticketEmail(ticket,creator,assignee,assignee,'https://example.com');assert.match(created.subject,/created/);assert.match(assigned.subject,/assigned to you/);assert.match(assigned.text,/Raised by: Creator/);assert.match(assigned.text,/Assigned to: Assignee/);assert.ok(!assigned.html.includes('<script>'));assert.match(assigned.html,/&lt;script&gt;/);});

@@ -1,3 +1,4 @@
+import {ticketEmail} from './ticket-email.mjs';
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2';
 
 const url=Deno.env.get('SUPABASE_URL')!;
@@ -7,7 +8,7 @@ const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshT
 
 Deno.serve(async req=>{
   const origin=req.headers.get('origin')||'';
-  const allowed=/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)||origin===Deno.env.get('APP_ORIGIN');
+  const allowed=/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)||origin===Deno.env.get('APP_ORIGIN')||origin==='https://ticketing-tool-rv8h.vercel.app'||origin==='https://ticketing-tool.b2bindemand.agency';
   const headers={'Content-Type':'application/json','Access-Control-Allow-Origin':allowed?origin:'null',
     'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin'};
   const reply=(status:number,data:object)=>new Response(JSON.stringify(data),{status,headers});
@@ -26,9 +27,19 @@ Deno.serve(async req=>{
     const body=await req.json();
     if(body.action==='ticket_email') {
       const ticket=await client.from('tickets').select('*').eq('id',body.id).maybeSingle();
-      if(ticket.error||!ticket.data||ticket.data.employee_id!==user.id||!ticket.data.send_email)return reply(403,{error:'Ticket notification not permitted'});
+      if(ticket.error||!ticket.data||ticket.data.employee_id!==user.id)return reply(403,{error:'Ticket notification not permitted'});
       if(ticket.data.email_status!=='not_requested')return reply(200,{email_status:ticket.data.email_status});
-      const state=await sendMail(user.email!,`Ticket #${ticket.data.number} received`,`Your ticket #${ticket.data.number} was created. Sign in to follow its progress.`);
+      const people=await admin.from('profiles').select('id,name,email').in('id',[ticket.data.employee_id,ticket.data.assigned_to]);
+      if(people.error)return reply(503,{error:'Unable to load ticket recipients'});
+      const creator=people.data.find(p=>p.id===ticket.data.employee_id);
+      const assignee=people.data.find(p=>p.id===ticket.data.assigned_to);
+      if(!creator||!assignee)return reply(503,{error:'Ticket recipients not found'});
+      const recipients=[...new Map([creator,assignee].map(p=>[p.email.toLowerCase(),p])).values()];
+      const results=await Promise.all(recipients.map(async recipient=>{
+        const message=ticketEmail(ticket.data,creator,assignee,recipient,Deno.env.get('APP_LOGIN_URL')||'https://ticketing-tool-rv8h.vercel.app');
+        return sendMail(recipient.email,message.subject,message.text,message.html,`ticket-${ticket.data.id}-${recipient.id}`);
+      }));
+      const state=results.every(s=>s==='sent')?'sent':results.every(s=>s==='not_configured')?'not_configured':'failed';
       await admin.from('tickets').update({email_status:state}).eq('id',ticket.data.id);
       return reply(200,{email_status:state});
     }
@@ -36,7 +47,7 @@ Deno.serve(async req=>{
     if(body.action==='reset_password') {
       const employee=await admin.from('profiles').select('email').eq('id',body.id).maybeSingle();
       if(employee.error||!employee.data)return reply(404,{error:'Employee not found'});
-      const redirectTo=new URL('/?page=reset-password',Deno.env.get('APP_LOGIN_URL')||'http://localhost:5173').href;
+      const redirectTo=new URL('/?page=reset-password',Deno.env.get('APP_LOGIN_URL')||'https://ticketing-tool-rv8h.vercel.app').href;
       const response=await admin.auth.resetPasswordForEmail(employee.data.email,{redirectTo});
       if(response.error)return reply(503,{error:'Could not send password reset email'});
       return reply(200,{requested:true});
@@ -50,18 +61,18 @@ Deno.serve(async req=>{
     if(account.error)return reply(409,{error:'Unable to create account. Check whether the email is already registered.'});
     const employee=await admin.from('profiles').insert({id:account.data.user.id,name:body.name.trim(),email:body.email.trim().toLowerCase(),department_id:body.department_id}).select().single();
     if(employee.error){await admin.auth.admin.deleteUser(account.data.user.id);return reply(503,{error:'Employee provisioning failed'});}
-    const loginUrl=Deno.env.get('APP_LOGIN_URL')||'http://localhost:5173';
+    const loginUrl=Deno.env.get('APP_LOGIN_URL')||'https://ticketing-tool-rv8h.vercel.app';
     const credential_email_status=await sendMail(body.email,'Your ticketing account',`Hello ${body.name},\n\nIT created your account.\nSign in: ${loginUrl}\nEmail: ${body.email}\nPassword: ${body.password}\n\nKeep these credentials private.`);
     return reply(201,{employee:employee.data,credential_email_status});
   }catch{return reply(500,{error:'Unable to process request'});}
 });
 
-async function sendMail(to:string,subject:string,text:string) {
+async function sendMail(to:string,subject:string,text:string,html?:string,idempotencyKey?:string) {
   const apiKey=Deno.env.get('RESEND_API_KEY');
   const from=Deno.env.get('EMAIL_FROM');
   if(!apiKey||!from)return 'not_configured';
   try {
-    const result=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json'},body:JSON.stringify({from,to:[to],subject,text}),signal:AbortSignal.timeout(10000)});
+    const result=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json',...(idempotencyKey?{'Idempotency-Key':idempotencyKey}:{})},body:JSON.stringify({from,to:[to],subject,text,...(html?{html}:{})}),signal:AbortSignal.timeout(10000)});
     return result.ok?'sent':'failed';
   }catch{return 'failed';}
 }

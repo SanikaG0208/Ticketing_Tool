@@ -73,7 +73,7 @@ export async function commitWorkspace(previous,next,user) {
     const type_id=types.find(t=>t.name===ticket.type&&t.department_id===department_id)?.id;
     const subtype_id=subtypes.find(s=>s.name===ticket.subtype&&s.type_id===type_id)?.id;
     const fields={department_id,type_id,subtype_id,assigned_to:ticket.assigned_to,requirements:ticket.requirements,description:ticket.description,
-      priority:ticket.priority,send_email:ticket.send_email};
+      priority:ticket.priority,send_email:true};
     if(old)checked(await supabase.from('tickets').update({...fields,...(ticket.status!==old.status?{status:ticket.status}:{})}).eq('id',old.id).eq('updated_at',old.updated_at).select('id').single());
     else {
       const row=checked(await supabase.from('tickets').insert({...fields,id:ticket.id,employee_id:user.id}).select().single());
