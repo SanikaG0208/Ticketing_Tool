@@ -29,6 +29,7 @@ export async function fetchWorkspace(limit = 50, before = null) {
     supabase.from('ticket_subtypes').select('id,name,type_id'),
     ticketQuery
   ]).then(results=>results.map(checked));
+  const times=tickets.length?checked(await supabase.from('ticket_activity_times').select('*').in('ticket_id',tickets.slice(0,limit).map(t=>t.id))):[];
   const departmentName=id=>departments.find(d=>d.id===id)?.name;
   return {
     hasMore:tickets.length>limit,
@@ -37,7 +38,7 @@ export async function fetchWorkspace(limit = 50, before = null) {
     types:types.map(t=>({id:t.id,name:t.name,department:departmentName(t.department_id),subtypes:subtypes.filter(s=>s.type_id===t.id).map(s=>s.name)})),
     tickets:tickets.slice(0,limit).map(t=>{
       const attachment=t.ticket_snapshots?.[0];
-      return {...t,employee:t.employee_id,department:departmentName(t.department_id),type:types.find(ty=>ty.id===t.type_id)?.name,
+      return {...t,...(times.find(event=>event.ticket_id===t.id)||{}),employee:t.employee_id,department:departmentName(t.department_id),type:types.find(ty=>ty.id===t.type_id)?.name,
         subtype:subtypes.find(s=>s.id===t.subtype_id)?.name,created:t.created_at,
         snapshot:attachment?{id:attachment.id,name:attachment.file_name,storage_path:attachment.storage_path}:null};
     })
@@ -91,4 +92,9 @@ export async function commitWorkspace(previous,next,user) {
     }
   }
   return fetchWorkspace(Math.max(50,next.tickets.length));
+}
+
+export async function fetchTicketTimes(id) {
+ const result=checked(await supabase.from('ticket_activity_times').select('last_action_at,completed_at').eq('ticket_id',id).maybeSingle());
+ return result||{last_action_at:null,completed_at:null};
 }
