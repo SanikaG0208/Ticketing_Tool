@@ -10,3 +10,7 @@ test('department role controls direct administration routes',()=>{
     assert.equal(protectedPage(page,{department:'IT'}),page);
   }
 });
+test('management insights are restricted to IT',()=>{
+ assert.equal(protectedPage('insights',{department:'HR'}),'tickets');
+ assert.equal(protectedPage('insights',{department:'IT'}),'insights');
+});

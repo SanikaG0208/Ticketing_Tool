@@ -77,7 +77,7 @@ export async function commitWorkspace(previous,next,user) {
       priority:ticket.priority,send_email:true};
     if(old)checked(await supabase.from('tickets').update({...fields,...(ticket.status!==old.status?{status:ticket.status}:{})}).eq('id',old.id).eq('updated_at',old.updated_at).select('id').single());
     else {
-      const row=checked(await supabase.from('tickets').insert({...fields,id:ticket.id,employee_id:user.id}).select().single());
+      const row=checked(await supabase.from('tickets').insert({...fields,id:ticket.id,employee_id:user.id,affected_system:ticket.affected_system||null,work_blocked:ticket.work_blocked??null}).select().single());
       if(row.send_email)await supabase.functions.invoke('ticketing-admin',{body:{action:'ticket_email',id:row.id}});
     }
     if(ticket.snapshot?.url?.startsWith('data:image/')) {

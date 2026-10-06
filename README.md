@@ -1,5 +1,11 @@
 # Organization Ticketing Tool — Supabase connected
 
+## Employee simplicity and management insights
+
+Creation keeps routing and an issue summary/description visible. Single-choice employee/type/subtype selections are filled automatically. Priority, screenshot and affected-system information are optional details. Employees can indicate that an issue prevents them from working. This is reported work blockage, not independently measured system availability; older tickets have unknown downtime rather than inferred zero downtime.
+
+IT can open Service insights. Server-side aggregates cover all accessible tickets, regardless of list pagination: assigned ownership, first response, first resolution, reported downtime and recurring category/system combinations during the last 90 days. First response counts an assignee/IT comment or status change by someone other than the creator. First resolution counts the first recorded Resolved transition, separately from Completed. Reported downtime runs from creation to that first resolution and keeps accumulating while unresolved. Reopened incident intervals are not measured separately. Repeated categories are potential patterns, not confirmed duplicate incidents. Unavailable historic events are excluded from averages. Management access is checked again in the database RPC; the UI role check alone is not trusted. Database-generated creation/comment timestamps prevent clients from choosing their own event times.
+
 Ticket loading uses async/await and parallel catalog requests. The initial ticket list fetches 50 rows; Load more fetches the next 50 using the last ticket number. Search and dashboard counts cover the loaded tickets. Screenshot links are requested only when opening ticket details. Comments show the latest 50 entries. Saves disable repeated submissions, and timestamp checks reject conflicting ticket edits instead of overwriting another user's changes. These improvements reduce request volume; concurrent-user capacity still needs load testing against the chosen Supabase plan before production rollout.
 
 ## Run in VS Code
