@@ -39,11 +39,12 @@ async function ticketFor(req) {
 
 app.get('/api/me', (req, res) => res.json({ ...req.profile, email: req.user.email, can_administer: req.profile.departments.name === 'IT' }));
 app.get('/api/catalog', async (req, res) => {
-  const tables = ['departments','ticket_types','ticket_subtypes'];
+  const tables = ['departments'];
   const data = await Promise.all(tables.map(table => req.db.from(table).select('*').order('name')));
   res.json(Object.fromEntries(tables.map((table, i) => [table, result(data[i])])));
 });
 
+app.get('/api/departments/:id/users', async (req,res)=>{validateId(req.params.id);res.json(result(await req.db.from('profiles').select('id,name,department_id').eq('department_id',req.params.id).eq('active',true).order('name')));});
 app.use('/api/admin', requireIT);
 app.get('/api/admin/users', async (req, res) => {
   const { page, limit } = validate(schemas.pagination, req.query);
@@ -65,14 +66,14 @@ app.post('/api/admin/users', async (req, res) => {
   res.status(201).json({ ...profile.data, credential_email_status });
 });
 for (const [route, table, schema] of [
-  ['departments','departments',schemas.name], ['types','ticket_types',schemas.type], ['subtypes','ticket_subtypes',schemas.subtype]
+  ['departments','departments',schemas.name]
 ]) app.post(`/api/admin/${route}`, async (req, res) => {
   res.status(201).json(result(await req.db.from(table).insert(validate(schema,req.body)).select().single()));
 });
 
 app.get('/api/tickets', async (req, res) => {
   const { page, limit } = validate(schemas.pagination, req.query);
-  const response = await req.db.from('tickets').select('*, employee:profiles(name), departments(name), ticket_types(name), ticket_subtypes(name)',{ count:'exact' })
+  const response = await req.db.from('tickets').select('*, employee:profiles(name), departments(name)',{ count:'exact' })
     .order('created_at',{ ascending:false }).range((page-1)*limit,page*limit-1);
   res.json({ items:result(response), total:response.count, page, limit });
 });

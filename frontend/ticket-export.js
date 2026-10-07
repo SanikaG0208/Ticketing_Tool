@@ -8,7 +8,7 @@ function date(value) {return value?new Intl.DateTimeFormat('en-IN',{dateStyle:'m
 export function ticketCsv(tickets,users) {
  const name=id=>users.find(u=>u.id===id)?.name||'';
  const email=id=>users.find(u=>u.id===id)?.email||'';
- const rows=[['Ticket number','Requirements','Description','Department','Type','Subtype','Raised by','Creator email','Assigned to','Assignee email','Priority','Status','Created (IST)','Last action (IST)','Completed (IST)'],...tickets.map(t=>['TKT'+String(t.number).padStart(2,'0'),t.requirements,t.description,t.department,t.type,t.subtype,name(t.employee),email(t.employee),name(t.assigned_to),email(t.assigned_to),t.priority,t.status,date(t.created),date(t.last_action_at),t.status==='Completed'?date(t.completed_at):''])];
+ const rows=[['Ticket number','Requirements','Description','Department','Issue','POC selection','Requested person/team','Raised by','Creator email','Assigned to','Assignee email','Priority','Status','Issue started (IST)','Raised (IST)','Last action (IST)','Completed (IST)'],...tickets.map(t=>['TKT'+String(t.number).padStart(2,'0'),t.requirements,t.description,t.department,t.issue,t.poc_mode,t.poc_other,name(t.employee),email(t.employee),name(t.assigned_to),email(t.assigned_to),t.priority,t.status,date(t.issue_started_at),date(t.created),date(t.last_action_at),t.status==='Completed'?date(t.completed_at):''])];
  return '\uFEFF'+rows.map(row=>row.map(cell).join(',')).join('\r\n');
 }
 export function downloadTickets(tickets,users) {

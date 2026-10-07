@@ -4,12 +4,11 @@ const name = z.string().trim().min(1).max(100);
 const uuid = z.string().uuid();
 export const schemas = {
   name: z.object({ name }).strict(),
-  type: z.object({ name, department_id: uuid }).strict(),
-  subtype: z.object({ name, type_id: uuid }).strict(),
   user: z.object({ name, email: z.string().email().max(254), password: z.string().min(12).max(128), department_id: uuid }).strict(),
   ticket: z.object({
-    department_id: uuid, type_id: uuid, subtype_id: uuid,
-    assigned_to: uuid,
+    department_id: uuid,
+    assigned_to: uuid.nullable().optional(),
+    issue: name, poc_mode: z.enum(['auto','manual','other']).default('auto'), poc_other: z.string().trim().max(200).nullable().optional(),
     requirements: z.string().trim().min(1).max(4000),
     description: z.string().trim().min(1).max(20000),
     priority: z.enum(['Low', 'Medium', 'High']),

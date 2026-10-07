@@ -32,7 +32,7 @@ Department permissions come from protected profile records, not user-editable me
 
 ## Connected data
 
-Departments, employees, department-specific types, subtypes and tickets are read from and saved to Supabase. Employee and Type depend on selected Department; Subtype depends on Type. Composite foreign keys enforce these relationships in the database. Screenshots use a private Supabase Storage bucket and expiring download URLs. The employee directory is available as a minimal active-employee list for ticket routing; IT administration remains protected.
+Departments, employees and tickets are read from and saved to Supabase. Employees depend on the selected department. Ticket types and subtypes have been removed. The recipient/department relationship is enforced in the database. Screenshots use a private Supabase Storage bucket and expiring download URLs. The employee directory is available as a minimal active-employee list for ticket routing; IT administration remains protected.
 
 The browser uses only the publishable key in .env.local. Never add a service-role/secret key to a VITE_ variable. The Edge Function uses Supabase's server-side service key. The optional Node server in src/ remains available for later separate hosting, but it is not needed to run the current app.
 
@@ -58,3 +58,7 @@ npm run build
 ```
 
 Verified: real Manik sign-in, wrong-password rejection, anonymous table and admin-function denial, employee RLS ownership/status/profile restrictions, unprovisioned account denial, browser sign-in, session restoration after refresh, sign-out, and direct protected-route redirection to login. Temporary policy-test records were rolled back; they did not leave employees or tickets in the database. Credential email and recovery-email delivery require provider configuration and were not tested.
+
+For schema setups built from the earlier SQL files, apply `database/issue-start.sql` and then `database/remove-ticket-categories.sql` after the activity and insights SQL. The category-removal migration preserves tickets and activity history. Recurrence now groups named affected systems by department.
+
+Apply `database/dependent-ticket-routing.sql` after the category-removal migration. Active departments hold their configured issue options. Existing Developer departments use the Development options. New tickets capture the authenticated creator, validate the selected issue and active POC, and default to Auto Assign. Auto Assign selects the first active department user by name (UUID breaks ties); Other POC records the requested person/team and uses the same default assignee for review. A department with no active POC cannot accept a ticket.

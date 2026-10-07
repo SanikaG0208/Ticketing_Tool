@@ -25,7 +25,7 @@ test('unprovisioned accounts cannot access employee APIs',async () => {
   assert.equal(error.status,403);
 });
 test('ticket input rejects employee spoofing and invalid priority', () => {
-  const body={assigned_to:'123e4567-e89b-42d3-a456-426614174003',department_id:'123e4567-e89b-42d3-a456-426614174000',type_id:'123e4567-e89b-42d3-a456-426614174001',subtype_id:'123e4567-e89b-42d3-a456-426614174002',requirements:'Laptop',description:'Unable to sign in',priority:'Medium'};
+  const body={assigned_to:'123e4567-e89b-42d3-a456-426614174003',department_id:'123e4567-e89b-42d3-a456-426614174000',issue:'Computer / Laptop',requirements:'Laptop',description:'Unable to sign in',priority:'Medium'};
   assert.equal(validate(schemas.ticket,body).send_email,false);
   assert.throws(()=>validate(schemas.ticket,{...body,employee_id:body.department_id}));
   assert.throws(()=>validate(schemas.ticket,{...body,priority:'Urgent'}));
