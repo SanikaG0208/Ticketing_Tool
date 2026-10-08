@@ -1,0 +1,15 @@
+export const exportColumns=[
+ ['Ticket ID','number',15],['Employee','employee',24],['Department','department',20],['Issue / Tool','issue',24],['Description','description',55],['Priority','priority',14],['Status','status',18],['Assigned Team','assigned_team',20],['Assigned POC','poc',24],
+ ['Issue Start Time (IST)','issue_started_at',24],['Created Time (IST)','created_at',24],['First Response (IST)','first_response_at',24],['Work Started (IST)','work_started_at',24],['Escalated (IST)','escalated_at',24],['Resolved (IST)','resolved_at',24],['Closed / Completed (IST)','closed_at',26],
+ ['Response Time (hours)','response_seconds',23],['Resolution Time (hours)','resolution_seconds',23],['Downtime (hours)','downtime_seconds',22],['SLA Status','sla_status',22],['Root Cause','root_cause',40],['Resolution','resolution',45],['Last Action (IST)','last_action_at',24]
+];
+export function exportValue(row,key){const value=row[key];if(value==null)return null;if(key==='number')return 'TKT'+String(value).padStart(2,'0');if(key.endsWith('_seconds'))return Number(value)/3600;if(key.endsWith('_at'))return new Date(new Date(value).getTime()+19800000);return String(value);}
+export async function ticketWorkbook(rows,filters={}){
+ const {default:ExcelJS}=await import('exceljs');const wb=new ExcelJS.Workbook();wb.creator='B2B InDemand Ticketing';wb.created=new Date();const sheet=wb.addWorksheet('Tickets');sheet.columns=exportColumns.map(([header,key,width])=>({header,key,width}));
+ for(const row of rows)sheet.addRow(Object.fromEntries(exportColumns.map(([,key])=>[key,exportValue(row,key)])));
+ sheet.views=[{state:'frozen',ySplit:1}];sheet.autoFilter={from:{row:1,column:1},to:{row:Math.max(1,sheet.rowCount),column:exportColumns.length}};
+ sheet.getRow(1).height=34;sheet.getRow(1).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF285B46'}};c.alignment={vertical:'middle',wrapText:true};});
+ exportColumns.forEach(([,key],i)=>{if(key.endsWith('_at'))sheet.getColumn(i+1).numFmt='dd mmm yyyy hh:mm:ss';if(key.endsWith('_seconds'))sheet.getColumn(i+1).numFmt='0.00';});
+ sheet.eachRow((r,i)=>{if(i>1){r.height=48;r.alignment={vertical:'top',wrapText:true};}});
+ const info=wb.addWorksheet('Export details');info.columns=[{width:28},{width:90}];info.addRows([['Exported at (IST)',new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'long',timeZone:'Asia/Kolkata'}).format(new Date())],['Ticket count',rows.length],['Date filter','Created time; start/end dates inclusive in IST'],['Timing','First recorded response/work/resolution/closure; retained after reopening'],['Downtime','Issue start to first resolution, only where work blockage was recorded; ongoing blockage accumulates'],['Missing data','Blank means not recorded; Escalated is the first reassignment with a reason'],['SLA','Not configured: targets and clock rules have not been agreed'],['Root cause / Resolution','Dedicated notes are not captured yet; these columns remain blank'],...Object.entries(filters).map(([key,value])=>[key,String(value||'All')])]);info.getColumn(2).alignment={wrapText:true,vertical:'top'};return wb;
+}

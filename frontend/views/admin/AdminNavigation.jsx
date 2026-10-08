@@ -1,0 +1,4 @@
+import React from 'react';
+import {Icon} from '../../features/ui.jsx';
+import {adminPageNames} from './AdminPage.jsx';
+export default function AdminNavigation({page,onNavigate,ticketCount}){return <><p className="nav-label">OVERVIEW</p>{['dashboard','tickets','downtime','sla','team-performance','reports','export'].map(key=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>onNavigate(key)}><Icon name={key==='team-performance'?'users':'tickets'}/>{adminPageNames[key]}{key==='tickets'&&<span className="count">{ticketCount}</span>}</button>)}<p className="nav-label admin-label">MANAGE</p>{['users','departments'].map(key=><button key={key} className={page===key?'nav active':'nav'} onClick={()=>onNavigate(key)}><Icon name={key==='users'?'users':'department'}/>{adminPageNames[key]}</button>)}</>;}

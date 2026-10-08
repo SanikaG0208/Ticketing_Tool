@@ -1,0 +1,4 @@
+import {supabase} from './supabase-service.js';
+import {fetchExportTicketsWithClient} from './ticket-export-query.js';
+export const fetchExportTickets=(filters,selectedIds,progress)=>fetchExportTicketsWithClient(supabase,filters,selectedIds,progress);
+export async function exportTicketsExcel(filters,selectedIds,progress){const rows=await fetchExportTickets(filters,selectedIds,progress);if(!rows.length)throw new Error('No tickets match this export.');const {ticketWorkbook}=await import('./ticket-workbook.js');const wb=await ticketWorkbook(rows,selectedIds?{selection:'Selected tickets'}:filters);const bytes=await wb.xlsx.writeBuffer();const url=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));const a=document.createElement('a');a.href=url;a.download='tickets-'+new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date())+'.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

@@ -1,0 +1,6 @@
+import React,{useRef,useState} from 'react';
+import {supabase} from '../../supabase-service.js';
+export default function DepartmentEditForm({department,onSave,onError,onCancel}){
+ const lock=useRef(false),[busy,setBusy]=useState(false);
+ return <form onSubmit={async e=>{e.preventDefault();if(lock.current)return;const fields=new FormData(e.currentTarget);const issues=[...new Set(String(fields.get('issues')).split('\n').map(s=>s.trim()).filter(s=>s&&s!=='Other')),'Other'];lock.current=true;setBusy(true);try{const result=await supabase.rpc('edit_department_details',{department_id:department.id,department_name:String(fields.get('name')),department_issues:issues});if(result.error)throw result.error;await onSave();}catch(e){onError(e.message);}finally{lock.current=false;setBusy(false);}}}><label>Department name<input name="name" defaultValue={department.name} required maxLength={100}/></label><label>Configured issues (one per line)<textarea name="issues" defaultValue={department.issues.join('\n')} rows={6}/></label><p className="hint">Other is always available. Existing tickets keep their recorded issue.</p><div className="modal-foot"><button type="button" className="secondary" disabled={busy} onClick={onCancel}>Cancel</button><button className="primary" disabled={busy}>{busy?'Saving…':'Save department'}</button></div></form>;
+}

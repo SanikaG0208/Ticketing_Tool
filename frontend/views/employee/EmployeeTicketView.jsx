@@ -1,0 +1,2 @@
+import React from 'react';
+export default function EmployeeTicketView({children,scope,onScope}){const choices=[["raised","Raised by me"],["received","Raised for me"]];return <section aria-label="Employee ticket workspace"><div className="ticket-filters role-view-tabs" role="group" aria-label="Ticket scope">{choices.map(([key,label])=><button type="button" key={key} aria-pressed={scope===key} className={scope===key?'selected':''} onClick={()=>onScope(key)}>{label}</button>)}</div>{children}</section>;}

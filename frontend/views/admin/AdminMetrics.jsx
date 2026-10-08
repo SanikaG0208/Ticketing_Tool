@@ -1,0 +1,5 @@
+import React,{useEffect,useState} from 'react';
+import {supabase} from '../../supabase-service.js';
+export function useAdminMetrics(){const [data,setData]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);async function refresh(){setBusy(true);setError('');try{const r=await supabase.rpc('admin_service_metrics');if(r.error)throw r.error;setData(r.data);}catch(e){setError(e.message);}finally{setBusy(false);}}useEffect(()=>{refresh();},[]);return {data,error,busy,refresh};}
+export function MetricsPanel({metrics,children}){return <section><div className="table-top"><button className="secondary" onClick={metrics.refresh} disabled={metrics.busy}>{metrics.busy?'Refreshing…':'Refresh'}</button></div>{metrics.error&&<p className="error" role="alert">{metrics.error}</p>}{!metrics.data&&metrics.busy?<p role="status">Loading metrics…</p>:children}</section>;}
+export function MetricCards({items}){return <div className="stats">{items.map(([title,value])=><div className="stat" key={title}><span>{title}</span><strong>{value??'—'}</strong></div>)}</div>;}

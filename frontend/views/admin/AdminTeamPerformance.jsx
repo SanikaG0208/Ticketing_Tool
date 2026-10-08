@@ -1,0 +1,4 @@
+import React from 'react';
+import {useAdminMetrics,MetricsPanel} from './AdminMetrics.jsx';
+import {duration} from '../../TicketInsights.jsx';
+export default function AdminTeamPerformance(){const metrics=useAdminMetrics(),d=metrics.data;return <MetricsPanel metrics={metrics}>{d&&<><div className="panel table-scroll"><table><thead><tr>{['Assigned employee','Team','Total','Active','Resolved / completed','Average response','Average resolution'].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{d.ownership.map(row=><tr key={row.id+row.department}><td>{row.owner}</td><td>{row.department}</td><td>{row.total}</td><td>{row.active}</td><td>{row.resolved}</td><td>{duration(row.response_seconds)}</td><td>{duration(row.resolution_seconds)}</td></tr>)}</tbody></table>{!d.ownership.length&&<p className="empty">No assigned tickets yet.</p>}</div></>}</MetricsPanel>;}

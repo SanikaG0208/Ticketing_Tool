@@ -10,7 +10,7 @@ export async function verifiedEmployee() {
   if(error||!data.user)return null;
   const profile=checked(await supabase.from('profiles').select('*, departments(name)').eq('id',data.user.id).maybeSingle());
   if(!profile?.active)throw new Error('Your employee account is inactive or has not been provisioned by IT.');
-  return {id:profile.id,name:profile.name,email:data.user.email,department:profile.departments.name};
+  return {id:profile.id,name:profile.name,email:data.user.email,department:profile.departments.name,department_id:profile.department_id,role:profile.role,is_poc:profile.is_poc};
 }
 export async function signInEmployee(email,password) {
   const response=await supabase.auth.signInWithPassword({email:email.trim(),password});
@@ -24,7 +24,7 @@ export async function fetchWorkspace(limit = 50, before = null) {
   if(before!==null)ticketQuery=ticketQuery.lt('number',before);
   const [departments,profiles,tickets]=await Promise.all([
     supabase.from('departments').select('id,name,issues,active'),
-    supabase.from('profiles').select('id,name,email,department_id,active'),
+    supabase.from('profiles').select('id,name,email,department_id,active,is_poc,role'),
     ticketQuery
   ]).then(results=>results.map(checked));
   const times=tickets.length?checked(await supabase.from('ticket_activity_times').select('*').in('ticket_id',tickets.slice(0,limit).map(t=>t.id))):[];
@@ -33,7 +33,7 @@ export async function fetchWorkspace(limit = 50, before = null) {
     hasMore:tickets.length>limit,
     departments:departments.filter(d=>d.active).map(d=>d.name).sort(),
     departmentOptions:departments.filter(d=>d.active),
-    users:profiles.map(p=>({id:p.id,name:p.name,email:p.email,department:departmentName(p.department_id),active:p.active})),
+    users:profiles.map(p=>({id:p.id,name:p.name,email:p.email,department:departmentName(p.department_id),active:p.active,is_poc:p.is_poc,role:p.role,department_id:p.department_id})),
     tickets:tickets.slice(0,limit).map(t=>{
       const attachment=t.ticket_snapshots?.[0];
       return {...t,...(times.find(event=>event.ticket_id===t.id)||{}),employee:t.employee_id,department:departmentName(t.department_id),created:t.created_at,
@@ -88,5 +88,13 @@ export async function fetchTicketTimes(id) {
 }
 
 export async function fetchDepartmentUsers(departmentId) {
- return checked(await supabase.from('profiles').select('id,name,department_id,active').eq('department_id',departmentId).eq('active',true).order('name'));
+ return checked(await supabase.from('profiles').select('id,name,department_id,active,is_poc').eq('department_id',departmentId).eq('active',true).eq('is_poc',true).order('name'));
+}
+
+export async function notifyTicketUpdate(id) {
+ const r=await supabase.functions.invoke('ticketing-admin',{body:{action:'ticket_update_email',ticket_id:id}});return r.error?'failed':r.data?.email_status||'failed';
+}
+export async function fetchTicket(id) {
+ const t=checked(await supabase.from('tickets').select('*,departments(name),ticket_snapshots(*)').eq('id',id).single());
+ const attachment=t.ticket_snapshots?.[0];return {...t,employee:t.employee_id,department:t.departments.name,created:t.created_at,...await fetchTicketTimes(id),snapshot:attachment?{...attachment,name:attachment.file_name}:null};
 }

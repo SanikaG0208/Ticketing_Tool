@@ -1,0 +1,3 @@
+import React from 'react';
+import {useAdminMetrics,MetricsPanel} from './AdminMetrics.jsx';
+export default function AdminReports(){const metrics=useAdminMetrics(),d=metrics.data;return <MetricsPanel metrics={metrics}>{d&&<><section className="panel table-scroll"><h3>Recurring issues · 90 days</h3><table><thead><tr><th>Department</th><th>System / tool</th><th>Occurrences</th></tr></thead><tbody>{d.recurring.map((r,i)=><tr key={i}><td>{r.department}</td><td>{r.system}</td><td>{r.occurrences}</td></tr>)}</tbody></table>{!d.recurring.length&&<p className="empty">No recurring named systems recorded.</p>}</section></>}</MetricsPanel>;}

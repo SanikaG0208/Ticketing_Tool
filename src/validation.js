@@ -14,7 +14,7 @@ export const schemas = {
     priority: z.enum(['Low', 'Medium', 'High']),
     send_email: z.boolean().default(false)
   }).strict(),
-  status: z.object({ status: z.enum(['Open', 'In Progress', 'Resolved', 'Closed']) }).strict(),
+  status: z.object({ status: z.enum(['Open', 'In Progress', 'Waiting', 'Resolved', 'Closed']), waiting_reason: z.enum(['Employee','IT','Developer','Approval','HR','Vendor','Other']).nullable().optional(), waiting_other: z.string().trim().max(1000).nullable().optional() }).strict(),
   pagination: z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(25) })
 };
 

@@ -62,3 +62,30 @@ Verified: real Manik sign-in, wrong-password rejection, anonymous table and admi
 For schema setups built from the earlier SQL files, apply `database/issue-start.sql` and then `database/remove-ticket-categories.sql` after the activity and insights SQL. The category-removal migration preserves tickets and activity history. Recurrence now groups named affected systems by department.
 
 Apply `database/dependent-ticket-routing.sql` after the category-removal migration. Active departments hold their configured issue options. Existing Developer departments use the Development options. New tickets capture the authenticated creator, validate the selected issue and active POC, and default to Auto Assign. Auto Assign selects the first active department user by name (UUID breaks ties); Other POC records the requested person/team and uses the same default assignee for review. A department with no active POC cannot accept a ticket.
+
+Apply database/ticket-communication.sql after ticket-reassign.sql. Comments support one optional PNG/JPEG screenshot up to 5 MB in the existing private bucket. Comment attachments are retained with history. Ticket activity generates recipient-scoped in-app notifications; viewing a discussion marks updates read. Email update links use the existing ticketing-admin Edge Function and require RESEND_API_KEY plus EMAIL_FROM. Delivery failures remain visible and do not discard saved updates. Notification links open the requested ticket after sign-in. New unread updates are polled every 30 seconds.
+
+### Excel ticket exports
+
+Use ticket checkboxes to show **Export Selected (Excel)**. **Export All · filters** exports all accessible matching tickets, with Created date (inclusive IST days), department/assigned team, status, issue/tool, POC and SLA filters. The export is fetched in pages rather than being limited to the visible ticket list. Supabase row-level security still controls access.
+
+The `.xlsx` workbook contains the recommended ticket fields, IST date cells, numeric durations in hours, frozen headings and Excel column filters. An Export details sheet explains the applied filters and timing definitions. Missing milestones are blank. SLA is `Not configured` until targets/clock rules are defined; Root Cause and Resolution notes are blank until those dedicated fields are captured. Downtime uses recorded work blockage and issue start to first resolution; ongoing blockage accumulates.
+
+Database view: `database/ticket-export.sql`. ExcelJS is loaded only when generating an export.
+
+### Admin, POC and Employee workspaces
+
+Roles are stored in `profiles.role` (`admin` / `employee`), with `profiles.is_poc` identifying department POCs. IT department membership does not grant Admin access. Supabase RLS checks Admin role, department POC visibility, and ticket ownership. The first Admin account uses `newadmin@123.com`; its password is not stored in repository files. Manik remains an IT POC.
+
+- Admin views all tickets and manages employees, Admin/POC designation and departments.
+- Employee has Raised by me and Raised for me tabs. Only ticket creator/Admin can edit ticket details; assigned employees can update work status and comment.
+- POC also has Raised for employees: other employees' tickets sent to their department. These allow viewing/commenting, without editing or reassignment.
+- No ticket Delete action is provided. Support marks Resolved; the creator confirms Completed. Completed/Closed tickets remain read-only; the creator can explicitly reopen a resolved/completed ticket with a reason.
+
+Component layout: `frontend/views/admin`, `frontend/views/poc`, `frontend/views/employee`; `frontend/features/admin` contains employee/department management; `frontend/features/tickets` contains the table, raise form and detail editor; `frontend/auth` contains login and shared permission checks.
+
+### Admin reporting and support workflows
+
+Admin navigation includes Dashboard, All Tickets, Downtime, SLA, Team Performance, Reports and Export. Components live under `frontend/views/admin`. The Admin-only `admin_service_metrics` RPC supplies organization totals, issue-start-based employee downtime and per-current-owner workload/timing aggregates. Reports list recurring named systems over 90 days. SLA thresholds remain unconfigured; reporting displays measured response/resolution times without claiming a breach or compliance.
+
+POC opens on Assigned Tickets, with SLA timings in the ticket View. Admin/current assignee can Reassign / Escalate to any active employee across departments, with a required reason. The original ticket department is retained; assigned team follows the new employee department. Initial ticket creation still requires an active designated POC in the selected department. Reassignment records actor, old/new owner, reason and timestamp in activity; the first reassignment is the Escalated milestone. New assignees can read the received ticket, update work status and comment. Other department POCs retain comment-only access. Completed tickets remain locked.
