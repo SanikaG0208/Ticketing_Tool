@@ -98,3 +98,9 @@ export async function fetchTicket(id) {
  const t=checked(await supabase.from('tickets').select('*,departments(name),ticket_snapshots(*)').eq('id',id).single());
  const attachment=t.ticket_snapshots?.[0];return {...t,employee:t.employee_id,department:t.departments.name,created:t.created_at,...await fetchTicketTimes(id),snapshot:attachment?{...attachment,name:attachment.file_name}:null};
 }
+
+export async function changeEmployeePassword(id,password,confirm_password){
+ const result=await supabase.functions.invoke('ticketing-admin',{body:{action:'change_password',id,password,confirm_password}});
+ if(result.error){let message='Unable to change password.';try{message=(await result.error.context.json()).error||message;}catch{}throw new Error(message);}
+ if(!result.data?.changed)throw new Error(result.data?.error||'Unable to change password.');
+}

@@ -62,6 +62,14 @@ Deno.serve(async req=>{
       return reply(200,{email_status:state});
     }
     if(!isAdmin)return reply(403,{error:'Administrator access required'});
+    if(body.action==='change_password') {
+      if(typeof body.id!=='string'||!/^[-0-9a-f]{36}$/i.test(body.id)||typeof body.password!=='string'||body.password.length<12||body.password.length>128||body.password!==body.confirm_password)return reply(422,{error:'Enter matching passwords of 12 to 128 characters'});
+      const employee=await admin.from('profiles').select('id').eq('id',body.id).eq('active',true).maybeSingle();
+      if(employee.error||!employee.data)return reply(404,{error:'Active employee not found'});
+      const result=await admin.auth.admin.updateUserById(employee.data.id,{password:body.password});
+      if(result.error)return reply(422,{error:'Password change failed. Check the password requirements.'});
+      return reply(200,{changed:true});
+    }
     if(body.action==='reset_password') {
       const employee=await admin.from('profiles').select('email').eq('id',body.id).maybeSingle();
       if(employee.error||!employee.data)return reply(404,{error:'Employee not found'});
