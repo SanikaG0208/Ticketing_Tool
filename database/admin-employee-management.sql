@@ -10,10 +10,6 @@ begin
  select department_id into current_department from public.profiles where id=$1 and active;
  if not found then raise exception 'Active employee not found'; end if;
  if not exists(select 1 from public.departments where id=$3 and active) then raise exception 'Choose an active department'; end if;
- if current_department<>$3 then
-  if $1=auth.uid() then raise exception 'You cannot change your own department'; end if;
-  if exists(select 1 from public.tickets where assigned_to=$1) then raise exception 'Department cannot change while tickets reference this employee as their assigned POC'; end if;
- end if;
  if not coalesce($5,false) and exists(select 1 from public.profiles where id=$1 and role='admin') and (select count(*) from public.profiles where active and role='admin')<=1 then raise exception 'At least one active Admin must remain'; end if;
  update public.profiles set name=trim($2),department_id=$3,is_poc=coalesce($4,false),role=case when coalesce($5,false) then 'admin' else 'employee' end where id=$1;
 end; $$;
