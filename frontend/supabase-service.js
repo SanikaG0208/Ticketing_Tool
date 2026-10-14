@@ -65,7 +65,7 @@ export async function commitWorkspace(previous,next,user) {
       priority:ticket.priority,send_email:true};
     if(old)checked(await supabase.from('tickets').update({...fields,...(ticket.status!==old.status?{status:ticket.status}:{})}).eq('id',old.id).eq('updated_at',old.updated_at).select('id').single());
     else {
-      const row=checked(await supabase.from('tickets').insert({...fields,id:ticket.id,employee_id:user.id,issue:ticket.issue,poc_mode:ticket.poc_mode||'manual',poc_other:ticket.poc_other||null,issue_started_at:ticket.issue_started_at||null,affected_system:ticket.affected_system||null,work_blocked:ticket.work_blocked??null}).select().single());
+      const row=checked(await supabase.from('tickets').insert({...fields,id:ticket.id,employee_id:user.id,issue:ticket.issue,tracking_poc_id:ticket.tracking_poc_id||null,poc_mode:ticket.poc_mode||'manual',poc_other:ticket.poc_other||null,issue_started_at:ticket.issue_started_at||null,affected_system:ticket.affected_system||null,work_blocked:ticket.work_blocked??null}).select().single());
       if(row.send_email)await supabase.functions.invoke('ticketing-admin',{body:{action:'ticket_email',id:row.id}});
     }
     if(ticket.snapshot?.url?.startsWith('data:image/')) {
@@ -88,7 +88,7 @@ export async function fetchTicketTimes(id) {
 }
 
 export async function fetchDepartmentUsers(departmentId) {
- return checked(await supabase.from('profiles').select('id,name,department_id,active,is_poc').eq('department_id',departmentId).eq('active',true).eq('is_poc',true).order('name'));
+ return checked(await supabase.from('profiles').select('id,name,department_id,active,is_poc').eq('department_id',departmentId).eq('active',true).order('name'));
 }
 
 export async function notifyTicketUpdate(id) {
