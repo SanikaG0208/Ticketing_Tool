@@ -1,3 +1,4 @@
+import {accountDisposition} from './account-disposition.mjs';
 import {ticketEmail} from './ticket-email.mjs';
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2';
 
@@ -83,6 +84,20 @@ Deno.serve(async req=>{
       typeof body.password!=='string'||body.password.length<12||body.password.length>128||typeof body.department_id!=='string')return reply(422,{error:'Name, email, department and a password of at least 12 characters are required'});
     const dept=await admin.from('departments').select('id').eq('id',body.department_id).eq('active',true).maybeSingle();
     if(dept.error||!dept.data)return reply(422,{error:'Department not found'});
+    const normalizedEmail=body.email.trim().toLowerCase();
+    const existing=await admin.from('profiles').select('id,active,left_at').ilike('email',normalizedEmail.replaceAll('\\','\\\\').replaceAll('%','\\%').replaceAll('_','\\_')).maybeSingle();
+    if(existing.error)return reply(503,{error:'Unable to check existing employee'});
+    const disposition=accountDisposition(existing.data);
+    if(disposition==='duplicate')return reply(409,{error:'An account with this email already exists'});
+    if(disposition==='reactivate'){
+      const restored=await admin.auth.admin.updateUserById(existing.data.id,{password:body.password});
+      if(restored.error)return reply(422,{error:'Unable to set password for returning employee'});
+      const employee=await admin.from('profiles').update({active:true,name:body.name.trim(),department_id:body.department_id,is_poc:body.is_poc===true,role:body.is_admin===true?'admin':'employee'}).eq('id',existing.data.id).eq('active',false).select().single();
+      if(employee.error)return reply(503,{error:'Unable to reactivate employee. Refresh and try again.'});
+      const loginUrl=Deno.env.get('APP_LOGIN_URL')||'https://ticketing-tool-rv8h.vercel.app';
+      const credential_email_status=await sendMail(normalizedEmail,'Your ticketing account has been reactivated',`Hello ${body.name},\n\nYour account has been reactivated.\nSign in: ${loginUrl}\nEmail: ${normalizedEmail}\nPassword: ${body.password}\n\nKeep these credentials private.`);
+      return reply(200,{employee:employee.data,reactivated:true,credential_email_status});
+    }
     const account=await admin.auth.admin.createUser({email:body.email.trim().toLowerCase(),password:body.password,email_confirm:true});
     if(account.error)return reply(409,{error:'Unable to create account. Check whether the email is already registered.'});
     const employee=await admin.from('profiles').insert({id:account.data.user.id,name:body.name.trim(),email:body.email.trim().toLowerCase(),department_id:body.department_id,is_poc:body.is_poc===true,role:body.is_admin===true?'admin':'employee'}).select().single();

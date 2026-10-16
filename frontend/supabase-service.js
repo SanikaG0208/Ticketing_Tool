@@ -24,7 +24,7 @@ export async function fetchWorkspace(limit = 50, before = null) {
   if(before!==null)ticketQuery=ticketQuery.lt('number',before);
   const [departments,profiles,tickets]=await Promise.all([
     supabase.from('departments').select('id,name,issues,active'),
-    supabase.from('profiles').select('id,name,email,department_id,active,is_poc,role'),
+    supabase.from('profiles').select('id,name,email,department_id,active,is_poc,role,left_at'),
     ticketQuery
   ]).then(results=>results.map(checked));
   const times=tickets.length?checked(await supabase.from('ticket_activity_times').select('*').in('ticket_id',tickets.slice(0,limit).map(t=>t.id))):[];
@@ -33,7 +33,7 @@ export async function fetchWorkspace(limit = 50, before = null) {
     hasMore:tickets.length>limit,
     departments:departments.filter(d=>d.active).map(d=>d.name).sort(),
     departmentOptions:departments.filter(d=>d.active),
-    users:profiles.map(p=>({id:p.id,name:p.name,email:p.email,department:departmentName(p.department_id),active:p.active,is_poc:p.is_poc,role:p.role,department_id:p.department_id})),
+    users:profiles.map(p=>({id:p.id,name:p.name,email:p.email,department:departmentName(p.department_id),active:p.active,left_at:p.left_at,is_poc:p.is_poc,role:p.role,department_id:p.department_id})),
     tickets:tickets.slice(0,limit).map(t=>{
       const attachment=t.ticket_snapshots?.[0];
       return {...t,...(times.find(event=>event.ticket_id===t.id)||{}),employee:t.employee_id,department:departmentName(t.department_id),created:t.created_at,

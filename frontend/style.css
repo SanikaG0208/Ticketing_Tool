@@ -98,3 +98,22 @@ footer{color:#50665a;font-size:12px}
 .ticket-view-details>section{border-top:1px solid #e0e8e3;padding-top:18px}
 @media(max-width:480px){.ticket-view-details>dl{grid-template-columns:1fr;gap:7px}.ticket-view-details dd{margin-bottom:10px}}
 .ticket-action-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.ticket-action-tabs button{flex:1;min-width:130px}.ticket-action-panel{scroll-margin-top:20px}.ticket-action-panel>div:not([hidden]){padding:16px;border:1px solid #d3e0d8;background:#f8faf9;border-radius:8px;margin-bottom:20px}.ticket-action-panel [hidden]{display:none}.ticket-readonly-fields{border:0;padding:0;margin:0}.ticket-readonly-fields input,.ticket-readonly-fields textarea{color:#42574a;background:#f1f4f2;opacity:1}.ticket-readonly-fields label{color:#526859}
+.employee-list-toolbar{flex-wrap:wrap}.employee-search-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.employee-search-form .ticket-search{width:280px}.employee-search-form .primary{min-height:40px}@media(max-width:600px){.employee-search-form{width:100%}.employee-search-form .ticket-search{flex:1;min-width:180px}}
+/* Employee directory search toolbar */
+.employee-list-toolbar{padding:16px 20px;gap:16px;border-bottom:1px solid #dfe7e2;align-items:center}
+.employee-search-form{flex:1;gap:8px;margin:0;min-width:0}
+.employee-search-input{display:flex;align-items:center;gap:10px;width:340px;max-width:100%;height:42px;margin:0;padding:0 12px;border:1px solid #bdcec5;border-radius:6px;background:#fff;color:#587064}
+.employee-search-input svg{flex-shrink:0}
+.employee-search-input input{width:100%;min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;font-size:13px;box-shadow:none;outline:none}
+.employee-search-input:focus-within{border-color:#26765b;box-shadow:0 0 0 2px #26765b20}
+.employee-search-input input:focus-visible{outline:none}
+.employee-search-form .primary,.employee-search-form .secondary{height:42px;min-height:42px;margin:0;padding:0 16px;font-size:13px}
+.employee-list-toolbar>.checkbox{margin:0;gap:8px;color:#425b4d;font-size:12px;white-space:nowrap}
+.employee-list-toolbar>.checkbox input{width:16px;height:16px;margin:0}
+@media(max-width:760px){.employee-list-toolbar{padding:14px}.employee-search-form{flex-basis:100%}.employee-search-input{flex:1;width:auto;min-width:160px}.employee-list-toolbar>.checkbox{white-space:normal}}
+.confirmation-dialog{width:calc(100% - 32px);max-width:460px;border:1px solid #d5e1da;border-radius:12px;padding:26px;background:#fff;color:#243e31;box-shadow:0 20px 70px #102d2540;margin:auto}
+.confirmation-dialog::backdrop{background:#142b2466}
+.confirmation-dialog h2{font-size:22px;line-height:1.35;margin:0 0 12px;letter-spacing:-.4px}
+.confirmation-dialog p{font-size:14px;line-height:1.7;color:#52675b;overflow-wrap:anywhere}
+.confirmation-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.confirmation-danger{background:#a3342d}.confirmation-danger:hover:not(:disabled){background:#86261f}
