@@ -1,0 +1,12 @@
+import TeamTicketList from './TeamTicketList.jsx';
+import React,{useEffect,useRef,useState} from 'react';
+import {supabase} from '../../supabase-service.js';
+import {teamTicketReport} from './team-ticket-report.js';
+export default function TeamTicketReport(){
+ const [selectedTeam,setSelectedTeam]=useState(null);
+ const [rows,setRows]=useState([]),[busy,setBusy]=useState(true),[error,setError]=useState('');const revision=useRef(0);
+ async function load(){const version=++revision.current;setBusy(true);setError('');try{let before=null;const all=[];for(;;){let q=supabase.from('tickets').select('number,department_id,status,needs_reassignment,departments(name)').order('number',{ascending:false}).limit(500);if(before!==null)q=q.lt('number',before);const result=await q;if(version!==revision.current)return;if(result.error)throw result.error;all.push(...result.data);if(result.data.length<500)break;before=result.data.at(-1).number;}setRows(teamTicketReport(all));}catch(e){if(version===revision.current)setError('Unable to load team report. Please retry.');}finally{if(version===revision.current)setBusy(false);}}
+ useEffect(()=>{load();return()=>{revision.current++;};},[]);
+ const total=rows.reduce((sum,r)=>sum+r.total,0);
+ return <section className="panel team-report"><div className="table-top"><div><h3>Team-wise ticket report</h3><p>By ticket department · All time</p></div><button type="button" className="secondary" disabled={busy} onClick={load}>{busy?'Loading…':'Refresh'}</button></div>{error?<p className="error" role="alert">{error}</p>:busy?<p className="empty" role="status">Loading team tickets…</p>:<><div className="table-scroll"><table><thead><tr>{['Department / Team','Total','Open','In Progress','Waiting','Resolved','Completed / Closed','Reassignment required'].map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map(r=><tr key={r.id}><td><button type="button" className="text-button team-report-link" aria-pressed={selectedTeam?.id===r.id} onClick={()=>setSelectedTeam(r)}>{r.name} <span aria-hidden="true">→</span></button></td>{['total','open','progress','waiting','resolved','closed','reassignment'].map(k=><td key={k}>{r[k]}</td>)}</tr>)}</tbody></table></div>{!rows.length&&<p className="empty">No tickets recorded.</p>}<footer>{total} tickets across {rows.length} teams</footer>{selectedTeam&&<TeamTicketList key={selectedTeam.id} team={selectedTeam}/>}</>}</section>;
+}
